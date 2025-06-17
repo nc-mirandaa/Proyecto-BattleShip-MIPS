@@ -70,7 +70,7 @@ dibujar_celda:
     blt $a1, 0, fuera_rango
     bgt $a1, 31, fuera_rango
 
-    # Cargar dirección base real
+    # Cargar dirección base real // no funciona
 #    la $t0, display_addr
 #    lw $t1, 0($t0)
 
@@ -85,25 +85,6 @@ dibujar_celda:
     # Validar alineación a 4 bytes
     andi $t5, $t4, 0x3
     bnez $t5, no_alineado
-
-	li $v0, 1
-	move $a0, $t4
-	syscall
-
-# Mostrar $t1 (dirección base del display)
-	li $v0, 1
-	move $a0, $t1
-	syscall
-
-# Mostrar dirección final calculada ($t4)
-	li $v0, 1
-	move $a0, $t4
-	syscall
-
-# Salto de línea para que no se peguen los números
-	li $v0, 11
-	li $a0, 10   # Código ASCII del salto de línea
-	syscall
 
     # Pintar celda
     sw $a2, 0($t4)
