@@ -4,32 +4,48 @@
 
 .data
 display_addr:     .word 0x10010000        # Dirección base del display
-color_agua:       .word 0x0000FF          # Azul
-mensaje_ok:       .asciiz "✅ Celdas dibujadas exitosamente.\n"
-mensaje_error:    .asciiz "⚠️ Dirección NO alineada. Revisa coordenadas.\n"
-mensaje_fuera:    .asciiz "⚠️ Coordenadas X o Y fuera de rango (0–15 / 0–31).\n"
+
+#colores
+color_agua: .word 0x0000FF  # Azul
+color_borde: .word 0x000000 # Negro
+color_barco: .word 0x808080 # Gris
+color_selec: .word 0xFFFF00 # Amarillo
+color_impacto: .word 0xFF0000 # Rojo
+color_fallo: .word 0xFFFFFF # Blanco
+
+# Tablero del jugador (16x16) - 0=agua, 1-4=barcos
+tablero_jugador: .space 256
+
+# Variable para el modo de juego (0=PvP, 1=PvCPU)
+modo_juego: .word 
+
+
+# Mensajes del menú de modo de juego
+msg_bienvenida: .asciiz "=== BATTLESHIP GAME ===\n"
+msg_seleccionar_modo: .asciiz "Selecciona el modo de juego:\n"
+msg_opcion_pvp: .asciiz "1. PvP (Jugador vs Jugador)\n"
+msg_opcion_pvcpu: .asciiz "2. PvCPU (Jugador vs CPU)\n"
+msg_ingrese_opcion: .asciiz "Ingrese su opcion (1 o 2): "
+msg_opcion_invalida: .asciiz "Opcion invalida. Intente nuevamente.\n"
+msg_modo_pvp: .asciiz "Modo PvP seleccionado!\n"
+msg_modo_pvcpu: .asciiz "Modo PvCPU seleccionado!\n"
+
+# Mensajes existentes
+msg_colocar: .asciiz "Colocando barco de tamaño "
+msg_de_4: .asciiz " (barco "
+msg_de_total: .asciiz " de 4)\n"
+msg_controles: .asciiz "Controles: WASD=mover, R=rotar, E=colocar\n"
+msg_error_pos: .asciiz "Posicion invalida o ocupada!\n"
+msg_barco_colocado: .asciiz "Barco colocado correctamente!\n"
+msg_todos_colocados: .asciiz "Todos los barcos han sido colocados!\n"
 
 .text
+.globl main
+
 main:
     # Pintar el fondo del tablero
     jal pintar_tablero_agua
 
-    #### Celda 1: GRIS en (3, 5) ####
-    li $a0, 3         # X
-    li $a1, 5         # Y
-    li $a2, 0x808080  # Gris
-    jal dibujar_celda
-
-    #### Celda 2: ROJA en (8, 10) ####
-    li $a0, 8         # X
-    li $a1, 10        # Y
-    li $a2, 0xFF0000  # Rojo
-    jal dibujar_celda
-
-    # Mensaje de éxito
-    li $v0, 4
-    la $a0, mensaje_ok
-    syscall
 
     # Terminar el programa
     li $v0, 10
@@ -42,6 +58,7 @@ pintar_tablero_agua:
     lw $t2, color_agua
 
     li $t3, 0    # Y
+
 loop_y:
     li $t4, 0    # X
 loop_x:
@@ -60,46 +77,3 @@ loop_x:
 
     jr $ra
 
-# === FUNCION: Dibujar celda individual con validaciones ===
-dibujar_celda:
-    # Validar que X ($a0) esté entre 0 y 15
-    blt $a0, 0, fuera_rango
-    bgt $a0, 15, fuera_rango
-
-    # Validar que Y ($a1) esté entre 0 y 31
-    blt $a1, 0, fuera_rango
-    bgt $a1, 31, fuera_rango
-
-    # Cargar dirección base real // no funciona
-#    la $t0, display_addr
-#    lw $t1, 0($t0)
-
-	li $t1, 0x10010000
-
-    # Calcular desplazamiento
-    sll $t2, $a1, 6       # Y * 64
-    sll $t3, $a0, 2       # X * 4
-    add $t4, $t1, $t2
-    add $t4, $t4, $t3     # Dirección final
-
-    # Validar alineación a 4 bytes
-    andi $t5, $t4, 0x3
-    bnez $t5, no_alineado
-
-    # Pintar celda
-    sw $a2, 0($t4)
-    jr $ra
-
-# === SI COORDENADAS FUERA DE RANGO ===
-fuera_rango:
-    li $v0, 4
-    la $a0, mensaje_fuera
-    syscall
-    jr $ra
-
-# === SI LA DIRECCIÓN NO ESTÁ ALINEADA ===
-no_alineado:
-    li $v0, 4
-    la $a0, mensaje_error
-    syscall
-    jr $ra
