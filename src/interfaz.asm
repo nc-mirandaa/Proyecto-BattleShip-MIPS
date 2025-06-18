@@ -45,11 +45,16 @@ msg_todos_colocados: .asciiz "Todos los barcos han sido colocados!\n"
 main:
     # Pintar el fondo del tablero
     jal pintar_tablero_agua
+    
+    #Menu
+    jal mostrar_menu_modo
 
 
     # Terminar el programa
     li $v0, 10
     syscall
+
+#//////////////////////////////////////////////////
 
 # === FUNCION: Pintar tablero completo de azul ===
 pintar_tablero_agua:
@@ -76,4 +81,25 @@ loop_x:
     blt $t3, 32, loop_y
 
     jr $ra
+    
+
+# Subrutina para mostrar el menú de modo de juego
+mostrar_menu_modo:
+li $v0, 4
+la $a0, msg_bienvenida
+syscall
+
+li $v0, 4
+la $a0, msg_seleccionar_modo
+syscall
+
+li $v0, 4
+la $a0, msg_opcion_pvp
+syscall
+
+li $v0, 4
+la $a0, msg_opcion_pvcpu
+syscall
+
+jr $ra
 
