@@ -48,6 +48,7 @@ main:
     
     #Menu
     jal mostrar_menu_modo
+    jal seleccionar_modo
 
 
     # Terminar el programa
@@ -103,3 +104,45 @@ syscall
 
 jr $ra
 
+
+#/////////////// probar primero porque no funciona el menu ///////////////////////
+
+# Subrutina para seleccionar el modo de juego
+seleccionar_modo:
+seleccionar_modo_loop:
+li $v0, 4
+la $a0, msg_ingrese_opcion
+syscall
+
+# Leer opción del usuario
+li $v0, 5
+syscall
+move $t0, $v0
+
+# Verificar opción válida (1 o 2)
+li $t1, 1
+beq $t0, $t1, modo_seleccionado_pvp
+li $t1, 2
+beq $t0, $t1, modo_seleccionado_pvcpu
+
+# Opción inválida
+li $v0, 4
+la $a0, msg_opcion_invalida
+syscall
+j seleccionar_modo_loop
+
+modo_seleccionado_pvp:
+li $t0, 0 # 0 = PvP
+sw $t0, modo_juego
+li $v0, 4
+la $a0, msg_modo_pvp
+syscall
+jr $ra
+
+modo_seleccionado_pvcpu:
+li $t0, 1 # 1 = PvCPU
+sw $t0, modo_juego
+li $v0, 4
+la $a0, msg_modo_pvcpu
+syscall
+jr $ra
