@@ -4,46 +4,91 @@
 
 .data
 display_addr:     .word 0x10010000
+
+#========= colores ===========
 color_agua:       .word 0x0000FF       # Azul
 color_divisor:    .word 0xFFFFFF       # Blanco
-mensaje_ok:       .asciiz "✅ Tablero completo\n"
-mensaje_error:    .asciiz "⚠️ Dirección no alineada\n"
-mensaje_fuera:    .asciiz "⚠️ Coordenadas fuera de rango\n"
+
+#========= mensajes ===========
+msj_bienvenida: .asciiz " Bienvenida al juego Battleship\n¿Deseas empezar una partida? (s/n): "
+msj_modo:       .asciiz "Selecciona el modo de juego:\n1. Persona vs Persona\n2. Persona vs CPU\nOpción: "
+msj_vs_pvp:     .asciiz "\n Has elegido Persona vs Persona\n"
+msj_vs_cpu:     .asciiz "\n Has elegido Persona vs CPU\n"
+msj_invalido:   .asciiz "\n Opción no válida\n"
+
+mensaje_ok:       .asciiz " Tablero completo\n"
+mensaje_error:    .asciiz "️ Dirección no alineada\n"
+mensaje_fuera:    .asciiz "️ Coordenadas fuera de rango\n"
 
 .text
 main:
-    # Pintar fondo azul y línea blanca
-    jal pintar_tablero_agua
-
-    # Celda roja en (5, 5) → tablero superior (ataque)
-    li $a0, 5
-    li $a1, 5
-    li $a2, 0xFF0000
-    jal dibujar_celda
-
-    # Celda gris en (10, 20) → tablero inferior (defensa)
-    li $a0, 10
-    li $a1, 20
-    li $a2, 0x808080
-    jal dibujar_celda
-
-    # Mensaje de éxito
+    # Mostrar mensaje de bienvenida
     li $v0, 4
-    la $a0, mensaje_ok
+    la $a0, msj_bienvenida
     syscall
 
+    # Leer carácter
+    
+    li $v0, 12
+    syscall
+    move $t0, $v0       # Captura la letra
+
+    li $v0, 12          # Consumir ENTER residual
+    syscall
+
+    li $t1, 115           # 's'
+    bne $t0, $t1, fin     # Si no es 's', salir
+
+
+    # Pintar fondo
+    jal pintar_tablero_agua
+
+    # Mostrar opciones de modo de juego
+    li $v0, 4
+    la $a0, msj_modo
+    syscall
+
+    # Leer entero
+    li $v0, 5
+    syscall
+    move $t2, $v0
+
+    li $t3, 1
+    beq $t2, $t3, modo_pvp
+
+    li $t3, 2
+    beq $t2, $t3, modo_cpu
+
+    # Opción no válida
+    li $v0, 4
+    la $a0, msj_invalido
+    syscall
+    j fin
+
+modo_pvp:
+    li $v0, 4
+    la $a0, msj_vs_pvp
+    syscall
+    j fin
+
+modo_cpu:
+    li $v0, 4
+    la $a0, msj_vs_cpu
+    syscall
+
+fin:
     li $v0, 10
     syscall
 
-# === Pintar fondo + línea divisoria en Y = 16 ===
+# === Fondo con línea blanca en Y = 16 ===
 pintar_tablero_agua:
-    li $t1, 0x10010000      # Dirección base
+    li $t1, 0x10010000
 
-    li $t3, 0               # Y
+    li $t3, 0
 loop_y:
-    li $t4, 0               # X
+    li $t4, 0
 loop_x:
-    li $t2, 0x0000FF        # Azul por defecto
+    li $t2, 0x0000FF        # Azul
     beq $t3, 16, usar_blanco
     j pintar_pixel
 
@@ -63,38 +108,4 @@ pintar_pixel:
     addi $t3, $t3, 1
     blt $t3, 32, loop_y
 
-    jr $ra
-
-# === Dibujar celda con validación ===
-dibujar_celda:
-    # Validar X: 0–15
-    blt $a0, 0, fuera_rango
-    bgt $a0, 15, fuera_rango
-    # Validar Y: 0–31
-    blt $a1, 0, fuera_rango
-    bgt $a1, 31, fuera_rango
-
-    li $t1, 0x10010000
-
-    sll $t2, $a1, 4        # Y * 16
-    sll $t3, $a0, 2        # X * 4
-    add $t4, $t1, $t2
-    add $t4, $t4, $t3
-
-    andi $t5, $t4, 0x3
-    bnez $t5, no_alineado
-
-    sw $a2, 0($t4)
-    jr $ra
-
-fuera_rango:
-    li $v0, 4
-    la $a0, mensaje_fuera
-    syscall
-    jr $ra
-
-no_alineado:
-    li $v0, 4
-    la $a0, mensaje_error
-    syscall
     jr $ra
